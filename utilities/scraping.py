@@ -6,6 +6,7 @@ from spirecomm.spire.game import Game
 from spirecomm.spire.relic import Relic
 from spirecomm.spire.potion import Potion
 from spirecomm.spire.card import Card
+from spirecomm.spire.event import Event
 from spirecomm.spire.character import Intent, Monster, PlayerClass
 from spirecomm.spire.screen import RestOption
 from spirecomm.communication.action import *
@@ -23,20 +24,20 @@ class GameDataManager():
             with open(self.file_name, 'r') as json_file:
                 self.data = json.load(json_file)
         except Exception as e:
-            logging.error("Unable to load", self.file_name, str(e))
+            logging.error(f"Unable to load {self.file_name}: {e}")
 
     def save(self):
         try:
             with open(self.file_name, 'w') as json_file:
                 json.dump(self.data, json_file)
         except Exception as e:
-            logging.error("Unable to save", self.file_name, str(e))
+            logging.error(f"Unable to save {self.file_name}: {e}")
 
     def convert(self, key):
         try:
             return self.data[key]
         except Exception as e:
-            logging.error("No entry found for", key)
+            logging.error(f"No entry found for {key}")
 
     def attempt_update(self, key):
         try:
@@ -45,7 +46,7 @@ class GameDataManager():
                 self.save()
                 logging.debug("Added new entry: " + key + " in " + str(self.data))
         except Exception as e:
-            logging.error("Unable to update", str(e))
+            logging.error(f"Unable to update: {e}")
 
 class Scraper():
     root_folder_path = ""
@@ -75,19 +76,31 @@ class Scraper():
             # Completely fine, that's what we wanted
             pass
         except Exception as e:
-            logging.error("Unable to create folder: " + folder_path)
+            logging.error(f"Unable to create folder: {folder_path}")
 
+
+    # --- Linux/Unix用 ---
+    # def __create_file(self, file_path: str):
+    #     try:
+    #         os.mknod(file_path)
+    #         # Fill with empty dict to make things happy
+    #         with open(file_path, 'w') as json_file:
+    #             json.dump(dict(), json_file)
+    #     except FileExistsError:
+    #         # Completely fine, that's what we wanted
+    #         pass
+    #     except Exception as e:
+    #         logging.error(f"Unable to create file: {file_path}")
+
+    # --- Windows用 ---
     def __create_file(self, file_path: str):
         try:
-            os.mknod(file_path)
-            # Fill with empty dict to make things happy
-            with open(file_path, 'w') as json_file:
-                json.dump(dict(), json_file)
-        except FileExistsError:
-            # Completely fine, that's what we wanted
-            pass
+            # ファイルがなければ空で作成し、空のdictを書き込む
+            if not os.path.exists(file_path):
+                with open(file_path, 'w') as json_file:
+                    json.dump(dict(), json_file)
         except Exception as e:
-            logging.error("Unable to create file: " + file_path)
+            logging.error(f"Unable to create file: {file_path}")
 
     def __initialize_objects(self, root_folder_path: str, class_to_load: PlayerClass):
         self.__create_folder(root_folder_path)
@@ -123,7 +136,7 @@ class Scraper():
             self.__scrape_for_monsters(gameState)
             self.__scrape_for_potions(gameState)
             self.__scrape_for_relics(gameState)
-            # TODO add events
+            self.__scrape_for_events(gameState)
         except Exception as e:
             logging.debug("Ran into error during scrape" + str(e))
 
@@ -135,7 +148,7 @@ class Scraper():
                 for card in cardCollection:
                     self.card_data_manager.attempt_update(card.card_id)
         except Exception as e:
-            logging.error("Ran into error while scraping for cards:" + str(e))
+            logging.error(f"Ran into error while scraping for cards: {e}")
 
     def __scrape_for_monsters(self, gameState: Game):
         logging.debug("Scraping monster data")
@@ -144,7 +157,7 @@ class Scraper():
             for monster in gameState.monsters:
                 self.monster_data_manager.attempt_update(monster.monster_id)
         except Exception as e:
-            logging.error("Ran into error while scraping for monsters:" + str(e))
+            logging.error(f"Ran into error while scraping for monsters: {e}")
 
     def __scrape_for_relics(self, gameState: Game):
         logging.debug("Scraping relic data")
@@ -153,7 +166,7 @@ class Scraper():
             for relic in gameState.relics:
                 self.relic_data_manager.attempt_update(relic.relic_id)
         except Exception as e:
-            logging.error("Ran into error while scraping for relics:" + str(e))
+            logging.error(f"Ran into error while scraping for relics: {e}")
 
 
     def __scrape_for_potions(self, gameState: Game):
@@ -163,4 +176,13 @@ class Scraper():
             for potion in gameState.potions:
                 self.potion_data_manager.attempt_update(potion.potion_id)
         except Exception as e:
-            logging.error("Ran into error while scraping for potions:" + str(e))
+            logging.error(f"Ran into error while scraping for potions: {e}")
+
+    def __scrape_for_events(self, gameState: Game):
+        logging.debug("Scraping event data")
+        try:
+            event: Event
+            for event in gameState.events:
+                self.event_data_manager.attempt_update(event.event_id)
+        except Exception as e:
+            logging.error(f"Ran into error while scraping for events: {e}")
