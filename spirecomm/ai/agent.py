@@ -30,20 +30,32 @@ class Agent(metaclass = ABCMeta):
 
     def get_next_action_in_game(self, game_state):
         """Determine the next action to take based on the game state"""
+        print("[DEBUG] get_next_action_in_game called")
+        print(f"[DEBUG] game_state: {game_state}")
         self.game = game_state
+        print(f"[DEBUG] choice_available: {getattr(self.game, 'choice_available', None)}")
         logging.info("Getting next game action")
         logging.debug("Using state: " + str(game_state))
         if self.game.choice_available:
+            print("[DEBUG] choice_available is True, calling get_screen_action")
             chosenAction = self.get_screen_action()
         elif self.game.proceed_available:
+            print("[DEBUG] proceed_available is True, returning ProceedAction")
             chosenAction = ProceedAction()
         elif self.game.play_available:
+            print("[DEBUG] play_available is True, returning get_next_combat_action")
             chosenAction = self.get_next_combat_action()
         elif self.game.end_available:
+            print("[DEBUG] end_available is True, returning EndTurnAction")
             chosenAction = EndTurnAction()
         elif self.game.cancel_available:
+            print("[DEBUG] cancel_available is True, returning CancelAction")
             chosenAction = CancelAction()
+        else:
+            print("[DEBUG] No available action flag set!")
+            chosenAction = None
         logging.info("Using next game action: " + str(chosenAction))
+        print(f"[DEBUG] chosenAction: {chosenAction}")
         return chosenAction
 
     def get_next_action_out_of_game(self):
